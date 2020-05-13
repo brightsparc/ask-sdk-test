@@ -41,11 +41,22 @@ AWSMOCK.mock('DynamoDB.DocumentClient', 'put', (params : PutItemInput, callback 
 });
 
 // Install UpsServiceClient mock
-const upsServiceMock : { getProfileName : () => string; getProfileGivenName : () => string; getProfileEmail : () => string; getProfileMobileNumber : () => string; } = {
+const upsServiceMock : { 
+    getProfileName : () => string; 
+    getProfileGivenName : () => string; 
+    getProfileEmail : () => string; 
+    getProfileMobileNumber : () => string; 
+    getSystemTimeZone : () => string; 
+    getSystemDistanceUnits : () => string; 
+    getSystemTemperatureUnit : () => string; 
+} = {
     getProfileName: () => undefined,
     getProfileGivenName: () => undefined,
     getProfileEmail: () => undefined,
     getProfileMobileNumber: () => undefined,
+    getSystemTimeZone: () => undefined,
+    getSystemDistanceUnits: () => undefined,
+    getSystemTemperatureUnit: () => undefined,
 };
 
 export class AlexaTest {
@@ -204,13 +215,14 @@ export class AlexaTest {
     private containsMockSettings(currentItem : SequenceItem) : boolean {
         return currentItem.hasOwnProperty('storesAttributes') ||
         currentItem.hasOwnProperty('withProfile') ||
+        currentItem.hasOwnProperty('withSystem') ||
         currentItem.hasOwnProperty('withStoredAttributes');
     }
 
     private invokeFunction(settings : TestSettings, currentItem : SequenceItem, request : RequestEnvelope) : Promise<any> {
         this.mockDynamoDB(settings, currentItem);
 
-        const interceptors = this.mockProfileAPI(currentItem);
+        const interceptors = this.mockProfileAPI(currentItem).concat(this.mockSystemAPI(currentItem))
 
         return lambdaLocal.execute({
             event: request,
@@ -300,6 +312,38 @@ export class AlexaTest {
         }
         return [
             nameInterceptor, givenNameInterceptor, emailInterceptor, mobileNumberInterceptor,
+        ];
+    }
+
+    private mockSystemAPI(currentItem : SequenceItem) : object[] {
+        console.log('current item', currentItem)
+        const systemMock = nock('https://api.amazonalexa.com').persist();
+        const timeZoneInterceptor = systemMock.get('/v2/devices/amzn1.ask.device.VOID/settings/System.timeZone');
+        const distanceUnitsInterceptor = systemMock.get('/v2/devices/amzn1.ask.device.VOID/settings/System.distanceUnits');
+        const temperatureUnitInterceptor = systemMock.get('/v2/devices/amzn1.ask.device.VOID/settings/System.temperatureUnit');
+        if (currentItem.withSystem && currentItem.withSystem.timeZone) {
+            timeZoneInterceptor.reply(200, () => {
+                return JSON.stringify(currentItem.withSystem.timeZone);
+            });
+        } else {
+            timeZoneInterceptor.reply(401, {});
+        }
+        if (currentItem.withSystem && currentItem.withSystem.distanceUnits) {
+            distanceUnitsInterceptor.reply(200, () => {
+                return JSON.stringify(currentItem.withSystem.distanceUnits);
+            });
+        } else {
+            distanceUnitsInterceptor.reply(401, {});
+        }
+        if (currentItem.withSystem && currentItem.withSystem.temperatureUnit) {
+            temperatureUnitInterceptor.reply(200, () => {
+                return JSON.stringify(currentItem.withSystem.temperatureUnit);
+            });
+        } else {
+            temperatureUnitInterceptor.reply(401, {});
+        }
+        return [
+            timeZoneInterceptor, distanceUnitsInterceptor, temperatureUnitInterceptor, 
         ];
     }
 

@@ -39,6 +39,9 @@ const upsServiceMock = {
     getProfileGivenName: () => undefined,
     getProfileEmail: () => undefined,
     getProfileMobileNumber: () => undefined,
+    getSystemTimeZone: () => undefined,
+    getSystemDistanceUnits: () => undefined,
+    getSystemTemperatureUnit: () => undefined,
 };
 class AlexaTest {
     constructor(handler, settings) {
@@ -175,11 +178,12 @@ class AlexaTest {
     containsMockSettings(currentItem) {
         return currentItem.hasOwnProperty('storesAttributes') ||
             currentItem.hasOwnProperty('withProfile') ||
+            currentItem.hasOwnProperty('withSystem') ||
             currentItem.hasOwnProperty('withStoredAttributes');
     }
     invokeFunction(settings, currentItem, request) {
         this.mockDynamoDB(settings, currentItem);
-        const interceptors = this.mockProfileAPI(currentItem);
+        const interceptors = this.mockProfileAPI(currentItem).concat(this.mockSystemAPI(currentItem));
         return lambdaLocal.execute({
             event: request,
             lambdaFunc: settings,
@@ -269,6 +273,40 @@ class AlexaTest {
         }
         return [
             nameInterceptor, givenNameInterceptor, emailInterceptor, mobileNumberInterceptor,
+        ];
+    }
+    mockSystemAPI(currentItem) {
+        console.log('current item', currentItem);
+        const systemMock = nock('https://api.amazonalexa.com').persist();
+        const timeZoneInterceptor = systemMock.get('/v2/devices/amzn1.ask.device.VOID/settings/System.timeZone');
+        const distanceUnitsInterceptor = systemMock.get('/v2/devices/amzn1.ask.device.VOID/settings/System.distanceUnits');
+        const temperatureUnitInterceptor = systemMock.get('/v2/devices/amzn1.ask.device.VOID/settings/System.temperatureUnit');
+        if (currentItem.withSystem && currentItem.withSystem.timeZone) {
+            timeZoneInterceptor.reply(200, () => {
+                return JSON.stringify(currentItem.withSystem.timeZone);
+            });
+        }
+        else {
+            timeZoneInterceptor.reply(401, {});
+        }
+        if (currentItem.withSystem && currentItem.withSystem.distanceUnits) {
+            distanceUnitsInterceptor.reply(200, () => {
+                return JSON.stringify(currentItem.withSystem.distanceUnits);
+            });
+        }
+        else {
+            distanceUnitsInterceptor.reply(401, {});
+        }
+        if (currentItem.withSystem && currentItem.withSystem.temperatureUnit) {
+            temperatureUnitInterceptor.reply(200, () => {
+                return JSON.stringify(currentItem.withSystem.temperatureUnit);
+            });
+        }
+        else {
+            temperatureUnitInterceptor.reply(401, {});
+        }
+        return [
+            timeZoneInterceptor, distanceUnitsInterceptor, temperatureUnitInterceptor,
         ];
     }
 }

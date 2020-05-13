@@ -88,6 +88,8 @@ export interface SequenceItem {
     playsVideo?: PlayVideoConfig;
     /** The profile information for API calls. Ups will be unauthorized when this is undefined */
     withProfile?: ProfileInfo;
+    /** The profile information for API calls. Ups will be unauthorized when this is undefined */
+    withSystem?: SystemInfo;
     /** The accessToken to provide for account linking */
     withUserAccessToken?: string;
     /** Any additional fields for custom validators */
@@ -110,6 +112,11 @@ export interface ProfileInfo {
     givenName?: string;
     email?: string;
     mobileNumber?: string;
+}
+export interface SystemInfo {
+    distanceUnits?: string;
+    temperatureUnit?: string;
+    timeZone?: string;
 }
 export declare abstract class ResponseValidator {
     abstract validate(currentItem: SequenceItem, response: ResponseEnvelope): void;

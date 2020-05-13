@@ -23,4 +23,5 @@ export declare class AlexaTest {
     private invokeFunction;
     private mockDynamoDB;
     private mockProfileAPI;
+    private mockSystemAPI;
 }

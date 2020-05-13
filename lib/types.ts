@@ -94,6 +94,10 @@ export interface SequenceItem {
 
     /** The profile information for API calls. Ups will be unauthorized when this is undefined */
     withProfile? : ProfileInfo;
+
+    /** The profile information for API calls. Ups will be unauthorized when this is undefined */
+    withSystem? : SystemInfo;
+    
     /** The accessToken to provide for account linking */
     withUserAccessToken? : string;
 
@@ -120,6 +124,12 @@ export interface ProfileInfo {
     givenName? : string;
     email? : string;
     mobileNumber? : string;
+}
+
+export interface SystemInfo {
+    distanceUnits?: string; // METRIC or IMPERIAL.
+    temperatureUnit?: string;  // CELSIUS or FAHRENHEIT.
+    timeZone?: string;
 }
 
 export abstract class ResponseValidator {
